@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>밸류체인 맵</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #0d0f14;
+  --bg2:       #13161e;
+  --bg3:       #1a1d27;
+  --bg4:       #20232f;
+  --border:    rgba(255,255,255,0.07);
+  --border2:   rgba(255,255,255,0.14);
+  --text:      #e8eaf0;
+  --text2:     #8b8fa8;
+  --text3:     #555870;
+  --accent:    #4f7fff;
+  --good:      #3ecf8e;
+  --warn:      #f5a623;
+  --bad:       #f04e4e;
+  --supplier:  #3ecf8e;
+  --customer:  #4f7fff;
+  --competitor:#f5a623;
+  --center:    #7c6af7;
+  --r:         10px;
+  --rl:        14px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Pretendard','Apple SD Gothic Neo',sans-serif;font-size:14px}
+
+/* ── HEADER ── */
+#header{
+  height:52px;padding:0 18px;
+  display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid var(--border);
+  background:rgba(13,15,20,0.95);
+  backdrop-filter:blur(14px);
+  position:relative;z-index:100;
+}
+.logo{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600;letter-spacing:-.02em}
+.logo-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 7px var(--accent);animation:pulse 2.4s ease-in-out infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.82)}}
+.hdr-sep{width:1px;height:18px;background:var(--border2);margin:0 4px}
+.hdr-btn{display:inline-flex;align-items:center;gap:6px;padding:6px 13px;border-radius:var(--r);border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:12px;font-family:inherit;cursor:pointer;transition:all .14s;white-space:nowrap}
+.hdr-btn:hover{background:var(--bg3);color:var(--text)}
+.hdr-btn.primary{border-color:var(--accent);color:var(--accent)}
+.hdr-btn.primary:hover{background:rgba(79,127,255,.1)}
+#hdr-corp-name{font-size:13px;font-weight:500;color:var(--text);display:none}
+#hdr-sig{font-size:11px;padding:3px 9px;border-radius:12px;display:none}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:6px}
+#hdr-updated{font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;display:none}
+
+/* ── CANVAS ── */
+#canvas-wrap{
+  position:relative;
+  width:100%;
+  height:calc(100vh - 52px);
+  overflow:hidden;
+  cursor:grab;
+}
+#canvas-wrap:active{cursor:grabbing}
+#cv{position:absolute;top:0;left:0}
+
+/* ── FOCUS BTNS ── */
+#focus-bar{
+  position:absolute;bottom:16px;left:50%;transform:translateX(-50%);
+  display:none;gap:8px;z-index:20;
+  background:rgba(13,15,20,.82);
+  border:1px solid var(--border2);
+  border-radius:20px;
+  padding:5px 8px;
+  backdrop-filter:blur(10px);
+}
+.fcs-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 13px;border-radius:14px;border:none;background:transparent;color:var(--text3);font-size:12px;font-family:inherit;cursor:pointer;transition:all .14s;white-space:nowrap}
+.fcs-btn:hover{color:var(--text);background:var(--bg4)}
+.fcs-btn.on{color:#fff;background:var(--bg4)}
+.fcs-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+
+/* ── EDGE TOOLTIP ── */
+#etip{
+  position:absolute;display:none;z-index:50;pointer-events:none;
+  background:var(--bg2);border:1px solid var(--border2);
+  border-radius:var(--r);padding:11px 14px;max-width:230px;line-height:1.55;
+}
+#etip-title{font-size:12px;font-weight:500;color:var(--text);margin-bottom:4px}
+#etip-body{font-size:11px;color:var(--text2)}
+
+/* ── LOG DRAWER ── */
+#drawer{
+  position:absolute;right:0;top:0;bottom:0;width:300px;
+  background:var(--bg2);border-left:1px solid var(--border);
+  display:flex;flex-direction:column;
+  transform:translateX(100%);transition:transform .22s ease;z-index:60;
+}
+#drawer.open{transform:translateX(0)}
+#drawer-header{padding:16px 16px 12px;border-bottom:1px solid var(--border);flex-shrink:0}
+#drawer-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+#drawer-badge{font-size:11px;font-weight:400;padding:2px 9px;border-radius:12px;background:rgba(79,127,255,.12);color:var(--accent);border:1px solid rgba(79,127,255,.25)}
+.drw-filters{display:flex;gap:5px}
+.df-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;padding:5px 0;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text3);font-size:11px;font-family:inherit;cursor:pointer;transition:all .13s}
+.df-btn:hover{border-color:var(--border2);color:var(--text2)}
+.df-btn.on-all{border-color:var(--border2);color:var(--text);background:var(--bg4)}
+.df-btn.on-good{border-color:rgba(62,207,142,.4);color:var(--good);background:rgba(62,207,142,.08)}
+.df-btn.on-warn{border-color:rgba(245,166,35,.4);color:var(--warn);background:rgba(245,166,35,.08)}
+.df-btn.on-bad{border-color:rgba(240,78,78,.4);color:var(--bad);background:rgba(240,78,78,.08)}
+.df-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.df-btn .df-dot.good{background:var(--good)}
+.df-btn .df-dot.warn{background:var(--warn)}
+.df-btn .df-dot.bad{background:var(--bad)}
+#drawer-list{flex:1;overflow-y:auto;padding:10px;scrollbar-width:thin;scrollbar-color:var(--bg4) transparent}
+.log-item{display:flex;gap:9px;align-items:flex-start;padding:10px 11px;border-radius:var(--r);border:1px solid var(--border);background:var(--bg3);margin-bottom:6px;cursor:pointer;transition:border-color .12s;animation:fadeUp .18s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.log-item:hover{border-color:var(--border2)}
+.log-sig{width:17px;height:17px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;margin-top:1px}
+.sig-good{background:rgba(62,207,142,.1);color:var(--good);border:1px solid rgba(62,207,142,.3)}
+.sig-warn{background:rgba(245,166,35,.1);color:var(--warn);border:1px solid rgba(245,166,35,.3)}
+.sig-bad {background:rgba(240,78,78,.1); color:var(--bad); border:1px solid rgba(240,78,78,.3)}
+.log-body{flex:1;min-width:0}
+.log-text{font-size:12px;color:var(--text);line-height:1.45;margin-bottom:4px}
+.log-meta{display:flex;align-items:center;gap:6px}
+.log-date{font-size:10px;font-family:'DM Mono',monospace;color:var(--text3)}
+.log-tag{font-size:10px;padding:1px 7px;border-radius:6px;font-weight:500}
+.tag-d{background:rgba(79,127,255,.1);color:#7fa4ff;border:1px solid rgba(79,127,255,.2)}
+.tag-n{background:var(--bg4);color:var(--text3);border:1px solid var(--border)}
+#drawer-stats{padding:9px 12px;border-top:1px solid var(--border);display:flex;gap:10px;flex-shrink:0}
+.dstat{display:flex;align-items:center;gap:4px;font-size:11px}
+.dstat-dot{width:5px;height:5px;border-radius:50%}
+.dstat-lbl{color:var(--text3)}
+.dstat-val{font-family:'DM Mono',monospace}
+#drawer-close{background:none;border:none;color:var(--text3);cursor:pointer;font-size:20px;padding:0;line-height:1;margin-left:auto}
+#drawer-close:hover{color:var(--text)}
+
+/* ── LOADING SPINNER ── */
+#loading{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(13,15,20,.6);z-index:80}
+.spinner{width:28px;height:28px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── MODAL ── */
+#modal-bg{position:absolute;inset:0;background:rgba(0,0,0,.6);z-index:90;display:none;align-items:center;justify-content:center}
+#modal-bg.open{display:flex}
+#modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--rl);width:360px;max-height:500px;overflow-y:auto;padding:22px}
+.modal-hd{font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px}
+.modal-sub{font-size:12px;color:var(--text3);margin-bottom:18px}
+.modal-sec{font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin:14px 0 8px}
+.corp-row{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:var(--r);cursor:pointer;transition:background .12s}
+.corp-row:hover{background:var(--bg3)}
+.corp-cdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.corp-rname{font-size:13px;font-weight:500;color:var(--text)}
+.corp-rmeta{margin-left:auto;font-size:11px;font-family:'DM Mono',monospace}
+#modal-close{float:right;background:none;border:none;color:var(--text3);cursor:pointer;font-size:20px;line-height:1}
+#modal-close:hover{color:var(--text)}
+
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header">
+  <div class="logo"><span class="logo-dot"></span>밸류체인 맵</div>
+  <div class="hdr-sep"></div>
+  <button class="hdr-btn primary" onclick="openModal()">
+    ＋ 기업 선택
+  </button>
+  <span id="hdr-corp-name"></span>
+  <span id="hdr-sig"></span>
+  <div class="hdr-right">
+    <span id="hdr-updated"></span>
+    <button class="hdr-btn" id="btn-all" onclick="focusAll()" style="display:none">전체보기</button>
+    <button class="hdr-btn" onclick="resetAll()" title="초기화">↺ 초기화</button>
+  </div>
+</div>
+
+<!-- CANVAS -->
+<div id="canvas-wrap">
+  <canvas id="cv"></canvas>
+
+  <!-- 포커스 버튼 -->
+  <div id="focus-bar">
+    <button class="fcs-btn" id="fb-supplier"   onclick="setFocus('supplier')">  <span class="fcs-dot" style="background:var(--supplier)"></span>공급사</button>
+    <button class="fcs-btn" id="fb-customer"   onclick="setFocus('customer')">  <span class="fcs-dot" style="background:var(--customer)"></span>고객사</button>
+    <button class="fcs-btn" id="fb-competitor" onclick="setFocus('competitor')"><span class="fcs-dot" style="background:var(--competitor)"></span>경쟁사</button>
+  </div>
+
+  <!-- 엣지 툴팁 -->
+  <div id="etip"><div id="etip-title"></div><div id="etip-body"></div></div>
+
+  <!-- 로그 드로어 -->
+  <div id="drawer">
+    <div id="drawer-header">
+      <div id="drawer-title">
+        공시 · 뉴스 <span id="drawer-badge"></span>
+        <button id="drawer-close" onclick="closeDrawer()">×</button>
+      </div>
+      <div class="drw-filters">
+        <button class="df-btn on-all" data-f="all"  onclick="drwFilter('all',this)">전체</button>
+        <button class="df-btn" data-f="good" onclick="drwFilter('good',this)"><span class="df-dot good"></span>호재</button>
+        <button class="df-btn" data-f="warn" onclick="drwFilter('warn',this)"><span class="df-dot warn"></span>주의</button>
+        <button class="df-btn" data-f="bad"  onclick="drwFilter('bad',this)"> <span class="df-dot bad"></span>악재</button>
+      </div>
+    </div>
+    <div id="drawer-list"></div>
+    <div id="drawer-stats">
+      <div class="dstat"><span class="dstat-dot" style="background:var(--good)"></span><span class="dstat-lbl">호재</span><span class="dstat-val" id="cnt-good" style="color:var(--good)">0</span></div>
+      <div class="dstat"><span class="dstat-dot" style="background:var(--warn)"></span><span class="dstat-lbl">주의</span><span class="dstat-val" id="cnt-warn" style="color:var(--warn)">0</span></div>
+      <div class="dstat"><span class="dstat-dot" style="background:var(--bad)"></span> <span class="dstat-lbl">악재</span><span class="dstat-val" id="cnt-bad"  style="color:var(--bad)">0</span></div>
+    </div>
+  </div>
+
+  <!-- 로딩 -->
+  <div id="loading"><div class="spinner"></div></div>
+</div>
+
+<!-- MODAL -->
+<div id="modal-bg">
+  <div id="modal">
+    <button id="modal-close" onclick="closeModal()">×</button>
+    <div class="modal-hd">기업 선택</div>
+    <div class="modal-sub">분석할 기업을 선택하세요</div>
+    <div class="modal-sec">시가총액 상위</div>
+    <div id="modal-corps"></div>
+    <div class="modal-sec">오늘 급상승</div>
+    <div id="modal-rising"></div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════
+   CONFIG — 배포 후 Vercel URL로 교체
+   ═══════════════════════════════════ */
+const API_BASE = '';  // 예: 'https://value-chain-map-1.vercel.app'
+                      // 로컬 vercel dev 시에는 '' 그대로
+
+/* ── STATIC DATA ── */
+const CORPS = [
+  { id:'samsung',  name:'삼성전자',   sector:'반도체·전자',  cap:'약 380조', rise:'+2.1%', dot:'#4f7fff', rising:false },
+  { id:'sk',       name:'SK하이닉스', sector:'반도체',       cap:'약 130조', rise:'+4.3%', dot:'#7c6af7', rising:true  },
+  { id:'hyundai',  name:'현대자동차', sector:'자동차',       cap:'약 52조',  rise:'+1.2%', dot:'#3ecf8e', rising:true  },
+  { id:'lg',       name:'LG화학',     sector:'화학·배터리',  cap:'약 28조',  rise:'+0.8%', dot:'#f5a623', rising:false },
+  { id:'posco',    name:'POSCO',      sector:'철강',         cap:'약 22조',  rise:'-0.3%', dot:'#888',    rising:false },
+  { id:'kakao',    name:'카카오',     sector:'IT·플랫폼',    cap:'약 19조',  rise:'+3.7%', dot:'#f5a623', rising:true  },
+];
+
+const EDGE_TIPS = {
+  supplier:   { title:'공급 신호 → 주가 영향', body:'공급사 수주 증가·단가 상승은 본사 원가 부담 신호. 공급사 실적 급증은 본사 수요 증가 선행지표.' },
+  customer:   { title:'수요 신호 → 주가 영향', body:'고객사 설비투자 확대·재고 축소는 수주 증가 선행 신호. 고객사 가이던스 상향 시 동반 상승 가능.' },
+  competitor: { title:'경쟁 신호 → 주가 영향', body:'경쟁사 점유율 변동·가격 인하는 수익성 직접 영향. 경쟁사 생산 차질 시 반사 수혜 가능.' },
+};
+
+const COLORS = { supplier:'#3ecf8e', customer:'#4f7fff', competitor:'#f5a623', center:'#7c6af7' };
+const SIG_MAP = { good:{cls:'sig-good',sym:'✓'}, warn:{cls:'sig-warn',sym:'!'}, bad:{cls:'sig-bad',sym:'✕'} };
+
+/* ── STATE ── */
+const cv    = document.getElementById('cv');
+const ctx   = cv.getContext('2d');
+let W, H, dpr;
+let pan     = { x:0, y:0 };
+let isDrag  = false, lastMouse = {};
+let nodes   = [], edges = [];
+let activeCorp = null, focusType = null;
+let drwFilter  = 'all', allLogs = [], chainData = null;
+
+/* ── RESIZE ── */
+function resize() {
+  const wrap = document.getElementById('canvas-wrap');
+  dpr = window.devicePixelRatio || 1;
+  W = wrap.clientWidth; H = wrap.clientHeight;
+  cv.width  = W * dpr; cv.height = H * dpr;
+  cv.style.width  = W + 'px'; cv.style.height = H + 'px';
+  ctx.scale(dpr, dpr);
+  activeCorp ? buildAndDraw() : drawEmpty();
+}
+window.addEventListener('resize', resize);
+
+/* ── EMPTY STATE ── */
+function drawEmpty() {
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = '#555870';
+  ctx.font = '13px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('상단의 "+ 기업 선택" 버튼으로 시작하세요', W/2, H/2);
+}
+
+/* ── MODAL ── */
+function openModal() {
+  document.getElementById('modal-bg').classList.add('open');
+  document.getElementById('modal-corps').innerHTML = CORPS.map(c => `
+    <div class="corp-row" onclick="selectCorp('${c.id}')">
+      <span class="corp-cdot" style="background:${c.dot}"></span>
+      <span class="corp-rname">${c.name}</span>
+      <span class="corp-rmeta" style="color:var(--text3)">${c.cap}</span>
+    </div>`).join('');
+  document.getElementById('modal-rising').innerHTML = CORPS.filter(c=>c.rising).map(c => `
+    <div class="corp-row" onclick="selectCorp('${c.id}')">
+      <span class="corp-cdot" style="background:${c.dot}"></span>
+      <span class="corp-rname">${c.name}</span>
+      <span class="corp-rmeta" style="color:var(--good)">${c.rise}</span>
+    </div>`).join('');
+}
+function closeModal() { document.getElementById('modal-bg').classList.remove('open'); }
+
+/* ── SELECT CORP ── */
+async function selectCorp(id) {
+  closeModal();
+  activeCorp = id;
+  focusType  = null;
+  pan        = { x:0, y:0 };
+  allLogs    = [];
+  chainData  = null;
+
+  const corp = CORPS.find(c=>c.id===id);
+  document.getElementById('hdr-corp-name').textContent = corp.name;
+  document.getElementById('hdr-corp-name').style.display = '';
+  document.getElementById('btn-all').style.display = '';
+  document.getElementById('focus-bar').style.display = 'flex';
+  updateFocusBtns();
+
+  showLoading(true);
+  try {
+    const [chain, logsRes] = await Promise.all([
+      fetch(`${API_BASE}/api/chain?corp=${id}`).then(r=>r.json()),
+      fetch(`${API_BASE}/api/logs?corp=${id}`).then(r=>r.json()),
+    ]);
+    chainData = chain.chain;
+    allLogs   = logsRes.logs || [];
+    updateHeaderSig(logsRes.overallSig || 'warn');
+    if (logsRes.updatedAt) {
+      const d = new Date(logsRes.updatedAt);
+      document.getElementById('hdr-updated').textContent =
+        d.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}) + ' 업데이트';
+      document.getElementById('hdr-updated').style.display = '';
+    }
+  } catch(e) {
+    console.warn('API 호출 실패, 목 데이터 사용:', e.message);
+    chainData = MOCK_CHAIN[id];
+    allLogs   = MOCK_LOGS[id] || [];
+    updateHeaderSig('warn');
+  }
+  showLoading(false);
+  buildAndDraw();
+  openDrawer(corp.name, allLogs);
+}
+
+function updateHeaderSig(sig) {
+  const el = document.getElementById('hdr-sig');
+  const map = { good:['호재 우세','#3ecf8e','rgba(62,207,142,.12)'], warn:['중립','#f5a623','rgba(245,166,35,.12)'], bad:['악재 우세','#f04e4e','rgba(240,78,78,.12)'] };
+  const [label, color, bg] = map[sig] || map.warn;
+  el.textContent = label;
+  el.style.cssText = `display:inline-block;color:${color};background:${bg};border:1px solid ${color}44;padding:2px 9px;border-radius:12px;font-size:11px`;
+}
+
+/* ── BUILD GRAPH ── */
+function buildAndDraw() {
+  if (!chainData) return;
+  nodes = []; edges = [];
+  const cx = W/2 + pan.x, cy = H/2 + pan.y;
+  const centerSig = allLogs[0]?.sig || 'warn';
+  nodes.push({ id:'center', label: CORPS.find(c=>c.id===activeCorp).name, x:cx, y:cy, type:'center', sig:centerSig, r:46 });
+
+  const baseAngles = { supplier:Math.PI, customer:0, competitor:Math.PI*0.55 };
+  const baseRadius = Math.min(W, H) * 0.32;
+
+  ['supplier','customer','competitor'].forEach(type => {
+    const list = chainData[type] || [];
+    const baseA = baseAngles[type];
+    const spread = Math.min(Math.PI * 0.6, (list.length - 1) * 0.4);
+    list.forEach((item, i) => {
+      const offset = list.length > 1 ? (i/(list.length-1) - 0.5) * spread : 0;
+      const angle  = baseA + offset;
+      const r      = baseRadius + (i%2)*30;
+      const nid    = `${type}-${i}`;
+      nodes.push({ id:nid, label:item.name, x:cx+Math.cos(angle)*r, y:cy+Math.sin(angle)*r, type, sig:'warn', r:32 });
+      edges.push({ from:'center', to:nid, type, weight: item.weight || 1.5 });
+    });
+  });
+  draw();
+}
+
+/* ── DRAW ── */
+function draw() {
+  ctx.clearRect(0,0,W,H);
+  const dark = true;
+  const textClr = dark ? '#e8eaf0' : '#1a1d27';
+
+  edges.forEach(e => {
+    const f = nodes.find(n=>n.id===e.from), t = nodes.find(n=>n.id===e.to);
+    if (!f||!t) return;
+    const faded = focusType && t.type !== focusType;
+    ctx.save();
+    ctx.globalAlpha = faded ? 0.1 : 0.9;
+    ctx.strokeStyle = COLORS[e.type];
+    ctx.lineWidth   = 1 + e.weight * 0.55;
+
+    const dx=t.x-f.x, dy=t.y-f.y, dist=Math.sqrt(dx*dx+dy*dy);
+    const ux=dx/dist, uy=dy/dist;
+    const x1=f.x+ux*f.r, y1=f.y+uy*f.r;
+    const x2=t.x-ux*t.r, y2=t.y-uy*t.r;
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+
+    const as = 7;
+    if (e.type === 'supplier')        { arrow(x2,y2,x1,y1,as,e.type); }
+    else if (e.type === 'customer')   { arrow(x1,y1,x2,y2,as,e.type); }
+    else { arrow(x1,y1,x2,y2,as,e.type); arrow(x2,y2,x1,y1,as,e.type); }
+    ctx.restore();
+  });
+
+  nodes.forEach(n => {
+    const faded = focusType && n.type !== 'center' && n.type !== focusType;
+    ctx.save();
+    ctx.globalAlpha = faded ? 0.12 : 1;
+    const isC = n.type === 'center';
+    ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI*2);
+    ctx.fillStyle = isC ? COLORS.center + '1a' : '#1a1d27';
+    ctx.fill();
+    ctx.strokeStyle = isC ? COLORS.center : COLORS[n.type];
+    ctx.lineWidth   = isC ? 2 : 1;
+    ctx.stroke();
+
+    ctx.fillStyle   = textClr;
+    ctx.textAlign   = 'center';
+    ctx.textBaseline= 'middle';
+    ctx.font        = `${isC?'500 13':'11'}px 'Pretendard',sans-serif`;
+    const lines = wrapText(n.label, n.r * 1.7);
+    lines.forEach((ln, i) => ctx.fillText(ln, n.x, n.y + (i-(lines.length-1)/2)*13 + (isC ? -7 : 0)));
+
+    const s = SIG_MAP[n.sig] || SIG_MAP.warn;
+    if (isC) {
+      ctx.font = '500 10px sans-serif';
+      ctx.fillStyle = n.sig==='good' ? '#3ecf8e' : n.sig==='bad' ? '#f04e4e' : '#f5a623';
+      ctx.fillText(s.sym + ' ' + allLogs.length + '건', n.x, n.y + 10);
+    } else {
+      const bx = n.x + n.r*0.62, by = n.y - n.r*0.62;
+      const sc = n.sig==='good'?'#3ecf8e':n.sig==='bad'?'#f04e4e':'#f5a623';
+      ctx.beginPath(); ctx.arc(bx, by, 7, 0, Math.PI*2);
+      ctx.fillStyle = sc+'22'; ctx.fill();
+      ctx.strokeStyle = sc; ctx.lineWidth = 1; ctx.stroke();
+      ctx.fillStyle = sc; ctx.font = '700 8px sans-serif';
+      ctx.fillText(s.sym, bx, by);
+    }
+    ctx.restore();
+  });
+}
+
+function arrow(x1,y1,x2,y2,sz,type) {
+  const a = Math.atan2(y2-y1,x2-x1);
+  ctx.save(); ctx.fillStyle = COLORS[type];
+  ctx.beginPath();
+  ctx.moveTo(x2,y2);
+  ctx.lineTo(x2-sz*Math.cos(a-.42), y2-sz*Math.sin(a-.42));
+  ctx.lineTo(x2-sz*Math.cos(a+.42), y2-sz*Math.sin(a+.42));
+  ctx.closePath(); ctx.fill(); ctx.restore();
+}
+
+function wrapText(text, maxW) {
+  ctx.font = '11px sans-serif';
+  if (ctx.measureText(text).width <= maxW) return [text];
+  let line='', out=[];
+  [...text].forEach(ch => {
+    const t = line+ch;
+    if (ctx.measureText(t).width > maxW && line) { out.push(line); line=ch; }
+    else line=t;
+  });
+  if (line) out.push(line);
+  return out;
+}
+
+/* ── FOCUS ── */
+function setFocus(type) {
+  focusType = focusType === type ? null : type;
+  updateFocusBtns();
+  if (activeCorp) buildAndDraw();
+}
+function focusAll() { focusType=null; pan={x:0,y:0}; updateFocusBtns(); if(activeCorp) buildAndDraw(); }
+function updateFocusBtns() {
+  ['supplier','customer','competitor'].forEach(t => {
+    document.getElementById(`fb-${t}`).classList.toggle('on', focusType===t);
+  });
+}
+
+/* ── RESET ── */
+function resetAll() {
+  activeCorp=null; focusType=null; pan={x:0,y:0}; nodes=[]; edges=[]; allLogs=[]; chainData=null;
+  document.getElementById('hdr-corp-name').style.display='none';
+  document.getElementById('hdr-sig').style.display='none';
+  document.getElementById('hdr-updated').style.display='none';
+  document.getElementById('btn-all').style.display='none';
+  document.getElementById('focus-bar').style.display='none';
+  closeDrawer(); drawEmpty();
+}
+
+/* ── DRAWER ── */
+function openDrawer(name, logs) {
+  document.getElementById('drawer-badge').textContent = name;
+  document.getElementById('drawer').classList.add('open');
+  drwFilter = 'all';
+  document.querySelectorAll('.df-btn').forEach(b => {
+    b.className = 'df-btn' + (b.dataset.f==='all' ? ' on-all' : '');
+  });
+  renderDrawer(logs);
+}
+function closeDrawer() { document.getElementById('drawer').classList.remove('open'); }
+
+function renderDrawer(logs) {
+  const filtered = drwFilter==='all' ? logs : logs.filter(l=>l.sig===drwFilter);
+  document.getElementById('cnt-good').textContent = logs.filter(l=>l.sig==='good').length;
+  document.getElementById('cnt-warn').textContent = logs.filter(l=>l.sig==='warn').length;
+  document.getElementById('cnt-bad').textContent  = logs.filter(l=>l.sig==='bad').length;
+  const list = document.getElementById('drawer-list');
+  if (!filtered.length) {
+    list.innerHTML = '<div style="text-align:center;color:var(--text3);font-size:12px;padding:40px 0">해당 조건의 로그가 없습니다</div>';
+    return;
+  }
+  list.innerHTML = filtered.map((l,i) => `
+    <div class="log-item" style="animation-delay:${i*.035}s" ${l.url?`onclick="window.open('${l.url}','_blank')"`:''}>
+      <div class="log-sig ${SIG_MAP[l.sig].cls}">${SIG_MAP[l.sig].sym}</div>
+      <div class="log-body">
+        <div class="log-text">${l.text}</div>
+        <div class="log-meta">
+          <span class="log-date">${l.date}</span>
+          <span class="log-tag ${l.type==='공시'?'tag-d':'tag-n'}">${l.type}</span>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function drwFilter(f, btn) {
+  window.drwFilter = f;
+  document.querySelectorAll('.df-btn').forEach(b => {
+    b.className = 'df-btn' + (b.dataset.f===f ? ` on-${f}` : '');
+  });
+  renderDrawer(allLogs);
+}
+
+/* ── EDGE TOOLTIP ── */
+cv.addEventListener('mousemove', e => {
+  if (isDrag) {
+    pan.x += e.offsetX - lastMouse.x;
+    pan.y += e.offsetY - lastMouse.y;
+    lastMouse = { x:e.offsetX, y:e.offsetY };
+    if (activeCorp) buildAndDraw();
+    return;
+  }
+  if (!activeCorp) return;
+  const tip = document.getElementById('etip');
+  for (const ed of edges) {
+    const f=nodes.find(n=>n.id===ed.from), t=nodes.find(n=>n.id===ed.to);
+    if (!f||!t) continue;
+    const dx=t.x-f.x, dy=t.y-f.y, len=Math.sqrt(dx*dx+dy*dy);
+    const prj=((e.offsetX-f.x)*dx+(e.offsetY-f.y)*dy)/(len*len);
+    if (prj<0||prj>1) continue;
+    const px=f.x+prj*dx-e.offsetX, py=f.y+prj*dy-e.offsetY;
+    if (Math.sqrt(px*px+py*py)<9) {
+      const info = EDGE_TIPS[ed.type];
+      document.getElementById('etip-title').textContent = info.title;
+      document.getElementById('etip-body').textContent  = info.body;
+      tip.style.display='block';
+      tip.style.left = Math.min(e.offsetX+14, W-250)+'px';
+      tip.style.top  = Math.max(e.offsetY-60, 8)+'px';
+      return;
+    }
+  }
+  tip.style.display='none';
+});
+
+cv.addEventListener('mousedown', e => { isDrag=true; lastMouse={x:e.offsetX,y:e.offsetY}; });
+cv.addEventListener('mouseup',   ()  => { isDrag=false; });
+cv.addEventListener('mouseleave',()  => { isDrag=false; document.getElementById('etip').style.display='none'; });
+
+/* ── TOUCH (모바일 드래그) ── */
+let lastTouch = {};
+cv.addEventListener('touchstart', e => { lastTouch={x:e.touches[0].clientX,y:e.touches[0].clientY}; }, {passive:true});
+cv.addEventListener('touchmove',  e => {
+  const dx=e.touches[0].clientX-lastTouch.x, dy=e.touches[0].clientY-lastTouch.y;
+  pan.x+=dx; pan.y+=dy;
+  lastTouch={x:e.touches[0].clientX,y:e.touches[0].clientY};
+  if (activeCorp) buildAndDraw();
+}, {passive:true});
+
+/* ── LOADING ── */
+function showLoading(v) { document.getElementById('loading').style.display = v ? 'flex' : 'none'; }
+
+/* ── MOCK DATA (API 없을 때 폴백) ── */
+const MOCK_CHAIN = {
+  samsung: {
+    supplier:   [{name:'삼성SDI',weight:3},{name:'삼성전기',weight:3},{name:'원익IPS',weight:2},{name:'솔브레인',weight:2},{name:'한미반도체',weight:2}],
+    customer:   [{name:'애플',weight:3},{name:'엔비디아',weight:3},{name:'구글',weight:2},{name:'아마존',weight:2}],
+    competitor: [{name:'TSMC',weight:3},{name:'마이크론',weight:2},{name:'인텔',weight:2}],
+  },
+  sk:      { supplier:[{name:'SK머티리얼즈',weight:3},{name:'원익IPS',weight:2},{name:'유진테크',weight:2}], customer:[{name:'엔비디아',weight:3},{name:'AMD',weight:2},{name:'테슬라',weight:2}], competitor:[{name:'삼성전자',weight:3},{name:'마이크론',weight:2}] },
+  hyundai: { supplier:[{name:'현대모비스',weight:3},{name:'현대위아',weight:3},{name:'만도',weight:2}], customer:[{name:'개인소비자',weight:3},{name:'법인리스',weight:2}], competitor:[{name:'기아',weight:3},{name:'테슬라',weight:2},{name:'Toyota',weight:2}] },
+  lg:      { supplier:[{name:'포스코퓨처엠',weight:3},{name:'에코프로비엠',weight:3},{name:'엘앤에프',weight:2}], customer:[{name:'현대자동차',weight:3},{name:'GM',weight:3},{name:'BMW',weight:2}], competitor:[{name:'삼성SDI',weight:3},{name:'CATL',weight:3}] },
+  posco:   { supplier:[{name:'브라질 발레',weight:3},{name:'호주 BHP',weight:3}], customer:[{name:'현대자동차',weight:3},{name:'삼성전자',weight:2}], competitor:[{name:'현대제철',weight:3},{name:'일본제철',weight:2}] },
+  kakao:   { supplier:[{name:'AWS',weight:3},{name:'KT',weight:2}], customer:[{name:'카카오페이 가맹',weight:3},{name:'광고주',weight:3}], competitor:[{name:'네이버',weight:3},{name:'쿠팡',weight:2}] },
+};
+const MOCK_LOGS = {
+  samsung: [{sig:'good',text:'자사주 소각 1조 이사회 결의',date:'2025.05.29',type:'공시'},{sig:'good',text:'HBM4 NVIDIA 공급 확대',date:'2025.05.27',type:'뉴스'},{sig:'warn',text:'1Q 영업이익 전분기比 12%↓',date:'2025.04.30',type:'공시'},{sig:'bad',text:'미국 관세 불확실성 지속',date:'2025.05.20',type:'뉴스'}],
+  sk:      [{sig:'good',text:'HBM3E 16단 NVIDIA 인증 진행',date:'2025.05.26',type:'뉴스'},{sig:'good',text:'2Q 가이던스 상향 조정',date:'2025.05.20',type:'공시'},{sig:'bad',text:'우시 공장 화재 생산 차질',date:'2025.05.18',type:'뉴스'}],
+  hyundai: [{sig:'good',text:'조지아 전기차 공장 추가 투자',date:'2025.05.28',type:'공시'},{sig:'warn',text:'북미 딜러 재고 증가',date:'2025.05.22',type:'뉴스'},{sig:'good',text:'친환경차 판매 월 최고 경신',date:'2025.05.10',type:'뉴스'}],
+  lg:      [{sig:'good',text:'GM 배터리 계약 2030 연장',date:'2025.05.25',type:'공시'},{sig:'bad',text:'리튬가격 급락 양극재 단가↓',date:'2025.05.19',type:'뉴스'},{sig:'warn',text:'분리막 공장 일시 가동중단',date:'2025.05.08',type:'공시'}],
+  posco:   [{sig:'good',text:'자사주 소각 500억 결의',date:'2025.05.27',type:'공시'},{sig:'warn',text:'중국 저가 철강 시장가 하락',date:'2025.05.21',type:'뉴스'},{sig:'bad',text:'EU 탄소국경세 수출 원가↑',date:'2025.04.20',type:'뉴스'}],
+  kakao:   [{sig:'bad',text:'공정위 독점조사 개시 통보',date:'2025.05.26',type:'공시'},{sig:'warn',text:'MAU 성장률 2% 둔화',date:'2025.05.15',type:'뉴스'},{sig:'good',text:'카카오페이 첫 흑자전환',date:'2025.05.08',type:'공시'}],
+};
+
+/* ── INIT ── */
+resize();
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "name": "value-chain-map-1",
+  "version": "1.0.0",
+  "description": "한국 대기업 밸류체인 — 마인드맵 + 공시·뉴스 실시간 수집",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "xml2js": "^0.6.2"
+  }
+}
